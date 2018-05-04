@@ -11,7 +11,7 @@ is_short = False
 today = datetime.date.today()
 quote_start = datetime.time(8,30,0)
 trading_start = datetime.time(8,30,0)
-trading_end = datetime.time(19,57,0)
+trading_end = datetime.time(14,57,0)
 now = datetime.datetime.now().time()
 now = datetime.datetime.now().time()
 
@@ -79,7 +79,6 @@ while first_14 > 0 :
 
     second = datetime.datetime.now().second
     if second == 0  :
-        print('new min')
         now = datetime.datetime.now().time()
         df_new = get_data(symbol = symbol)
         df = pd.concat([df,df_new],axis = 0)
@@ -112,7 +111,7 @@ while first_14 > 0 :
         first_14 += -1
     
     
-    time.sleep(0.30)
+    time.sleep(0.50)
 
     
 #ONCE TRADING STARTS
@@ -149,7 +148,7 @@ while now < trading_end :
         last_avg_loss = df['avg_loss'][now]
         last_price = df['Price'][now]
 
-    else:               # If for intra minute action
+    else:               # for intra minute action
         df_s = get_data(symbol = symbol)
         curr_price = df_s['Price'][now]
         change = df_s['Price'][now] - df['Price'][now]
@@ -171,46 +170,66 @@ while now < trading_end :
         ma_30 = (curr_price + df['Price'][now])/30
         price_div = ma_30 - df['ma_30'][now]
 
-        if rsi < 40 and price_div < 0 and rsi_div > 0 and not is_long and not is_short:
-            print('Open Long Position in ' + symbol+' @ ' + str(df['Price'][now]))
-            long_enter = float(df['Price'][now])
-            long_stop = float(df['Price'][now] - 0.15)
-            longs.append((now, df['Price'][now]))
+        if rsi < 30 and price_div < 0 and rsi_div > 0 and not is_long and not is_short:
+            print('Open Long Position in ' + symbol+' @ ' + str(curr_price))
+            long_enter = float(curr_price)
+            long_stop = float(curr_price - 0.10)
+            longs.append((now, curr_price))
             is_long = True
-        elif rsi > 60 and price_div > 0 and rsi_div < 0 and not is_long and not is_short:
-            print('Open Short Position in ' + symbol+' @ ' + str(df['Price'][now]))
-            short_enter = float(df['Price'][now])
-            short_stop = float(df['Price'][now] + 0.15)
-            shorts.append((now, df['Price'][now]))
+            long_stops = []
+            long_stops.append(long_stop)
+        elif rsi > 70 and price_div > 0 and rsi_div < 0 and not is_long and not is_short:
+            print('Open Short Position in ' + symbol+' @ ' + str(curr_price))
+            short_enter = float(curr_price)
+            short_stop = float(curr_price + 0.10)
+            shorts.append((now, curr_price))
             is_short = True
+            short_stops = []
+            short_stops.append(short_stop)
 
-
-    if df['rsi'][now] < 40 and df['price_div'][now] < 0 and df['rsi_div'][now] > 0 and not is_long and not is_short:
-        print('Open Long Position in ' + symbol+' @ ' + str(df['Price'][now]))
-        long_enter = float(df['Price'][now])
-        long_stop = float(df['Price'][now] - 0.15)
-        longs.append((now, df['Price'][now]))
+    if df['rsi'][now] < 30 and df['price_div'][now] < 0 and df['rsi_div'][now] > 0 and not is_long and not is_short:
+        print('Open Long Position in ' + symbol+' @ ' + str(curr_price))
+        long_enter = float(curr_price)
+        long_stop = float(curr_price - 0.10)
+        longs.append((now, curr_price))
         is_long = True
-    
-    elif df['rsi'][now] > 60 and df['price_div'][now] > 0 and df['rsi_div'][now] < 0 and not is_long and not is_short:
-        print('Open Short Position in ' + symbol+' @ ' + str(df['Price'][now]))
-        short_enter = float(df['Price'][now])
-        short_stop = float(df['Price'][now] + 0.15)
-        shorts.append((now, df['Price'][now]))
+        long_stops = []
+        long_stops.append(long_stop)
+    elif df['rsi'][now] > 70 and df['price_div'][now] > 0 and df['rsi_div'][now] < 0 and not is_long and not is_short:
+        print('Open Short Position in ' + symbol+' @ ' + str(curr_price))
+        short_enter = float(curr_price)
+        short_stop = float(curr_price + 0.10)
+        shorts.append((now, curr_price))
         is_short = True
+        short_stops = []
+        short_stops.append(short_stop)
     elif is_long and curr_price <= long_stop :
-        print('Close Long ' +symbol+' Position @ ' + str(df['Price'][now]))
-        long_closes.append((now, df['Price'][now]))
+        print('Close Long ' +symbol+' Position @ ' + str(curr_price))
+        long_closes.append((now, curr_price))
         is_long = False
-    elif is_long and (curr_price - long_enter) > 0.149 :
-        long_enter += 0.15
-        long_stop += 0.15
-    elif is_short and (curr_price - short_enter) < -0.149:
-        short_enter += -0.15
-        short_stop += -0.15
+    elif is_long and (curr_price - long_enter) > 0.10 :
+        long_enter += float(curr_price - long_enter)
+        if len(long_stops) == 1:
+            long_stop += float((curr_price - long_enter)+0.05)
+            long_stops.append(long_stop)
+            print('moving stop up to ' + str(long_stop))
+        else:
+            long_stop += float(curr_price - long_enter)
+            long_stops.append(long_stop)
+            print('moving stop up to ' + str(long_stop))
+    elif is_short and (curr_price - short_enter) < -0.10:
+        short_enter += float(curr_price - short_enter)
+        if len(short_stops) == 1:
+            short_stop += float((curr_price - short_enter)-0.05)
+            short_stops.append(short_stop)
+            print('moving stop down to ' + str(short_stop))
+        else :
+            short_stop += float(curr_price - short_enter)
+            short_stops.append(short_stop)
+            print('moving stop up to ' + str(short_stop))
     elif is_short and curr_price >= short_stop:
-        print('Close Short ' +symbol+' Position @ ' + str(df['Price'][now]))
-        short_closes.append((now, df['Price'][now]))
+        print('Close Short ' +symbol+' Position @ ' + str(curr_price))
+        short_closes.append((now, curr_price))
         is_short = False
 
     time.sleep(0.50)
@@ -240,3 +259,4 @@ long_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/longs_'+str(today)+'
 short_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/shorts_'+str(today)+'.csv')
 long_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/long_closes_'+str(today)+'.csv')
 short_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/short_closes_'+str(today)+'.csv')
+
