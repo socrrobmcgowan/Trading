@@ -165,11 +165,12 @@ while now < trading_end :
         avg_loss = ((last_avg_loss*13)+loss)/14
         rs = avg_gain/avg_loss
         rsi = 100 - (100/(1.0+rs))
-        rsi_ma = (rsi + df['rsi'][now])/30
+        rsi_ma = (rsi + (df['rsi_ma'][now]*29))/30
         rsi_div = rsi_ma - df['rsi_ma'][now]
-        ma_30 = (curr_price + df['Price'][now])/30
+        ma_30 = (curr_price + (df['ma_30'][now]*29))/30
         price_div = ma_30 - df['ma_30'][now]
 
+        
         if rsi < 30 and price_div < 0 and rsi_div > 0 and not is_long and not is_short:
             print('Open Long Position in ' + symbol+' @ ' + str(curr_price))
             long_enter = float(curr_price)
@@ -208,7 +209,6 @@ while now < trading_end :
         long_closes.append((now, curr_price))
         is_long = False
     elif is_long and (curr_price - long_enter) > 0.10 :
-        long_enter += float(curr_price - long_enter)
         if len(long_stops) == 1:
             long_stop += float((curr_price - long_enter)+0.05)
             long_stops.append(long_stop)
@@ -217,8 +217,8 @@ while now < trading_end :
             long_stop += float(curr_price - long_enter)
             long_stops.append(long_stop)
             print('moving stop up to ' + str(long_stop))
+        long_enter += float(curr_price - long_enter)
     elif is_short and (curr_price - short_enter) < -0.10:
-        short_enter += float(curr_price - short_enter)
         if len(short_stops) == 1:
             short_stop += float((curr_price - short_enter)-0.05)
             short_stops.append(short_stop)
@@ -226,7 +226,8 @@ while now < trading_end :
         else :
             short_stop += float(curr_price - short_enter)
             short_stops.append(short_stop)
-            print('moving stop up to ' + str(short_stop))
+            print('moving stop down to ' + str(short_stop))
+        short_enter += float(curr_price - short_enter)
     elif is_short and curr_price >= short_stop:
         print('Close Short ' +symbol+' Position @ ' + str(curr_price))
         short_closes.append((now, curr_price))
@@ -259,4 +260,5 @@ long_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/longs_'+str(today)+'
 short_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/shorts_'+str(today)+'.csv')
 long_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/long_closes_'+str(today)+'.csv')
 short_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/short_closes_'+str(today)+'.csv')
+
 
