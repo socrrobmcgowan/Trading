@@ -109,10 +109,9 @@ while first_14 > 0 :
         last_avg_loss = df['avg_loss'][now]
         last_price = df['Price'][now]
         first_14 += -1
-    
-    
-    time.sleep(0.50)
-
+        time.sleep(0.92)
+    else:
+        time.sleep(0.92)
     
 #ONCE TRADING STARTS
 
@@ -140,8 +139,8 @@ while now < trading_end :
         df['ma_30'] = df['Price'].rolling(30).mean()
         df['rsi'][now] = rsi_d['rsi']
         df['rsi_ma'] = df['rsi'].rolling(30).mean()
-        df['rsi_div'] = df['rsi_ma'] - df['rsi_ma'].shift(1)
-        df['price_div'] = df['ma_30'] - df['ma_30'].shift(1)   
+        df['rsi_div'] = df['rsi'] - df['rsi'].shift(8)
+        df['price_div'] = df['Price'] - df['Price'].shift(8)   
         
         
         last_avg_gain = df['avg_gain'][now]
@@ -166,9 +165,9 @@ while now < trading_end :
         rs = avg_gain/avg_loss
         rsi = 100 - (100/(1.0+rs))
         rsi_ma = (rsi + (df['rsi_ma'][now]*29))/30
-        rsi_div = rsi_ma - df['rsi_ma'][now]
+        rsi_div = rsi - df['rsi'].shift(8)[now]
         ma_30 = (curr_price + (df['ma_30'][now]*29))/30
-        price_div = ma_30 - df['ma_30'][now]
+        price_div = curr_price - df['Price'].shift(8)[now]
 
         
         if rsi < 30 and price_div < 0 and rsi_div > 0 and not is_long and not is_short:
@@ -233,7 +232,7 @@ while now < trading_end :
         short_closes.append((now, curr_price))
         is_short = False
 
-    time.sleep(0.50)
+    time.sleep(0.79)
 
 if is_long:
     print('Closing Long Position for End of Day')
@@ -260,5 +259,3 @@ long_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/longs_'+str(today)+'
 short_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/shorts_'+str(today)+'.csv')
 long_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/long_closes_'+str(today)+'.csv')
 short_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/short_closes_'+str(today)+'.csv')
-
-
