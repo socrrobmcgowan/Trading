@@ -143,22 +143,12 @@ while first_14 > 0 :
             st_rsi_high = float(50)
             st_rsi_low = float(50)
         
-        if len(lt_price_highs) > 9: 
-            lt_price_highs.remove(min(lt_price_highs))
-            lt_price_lows.remove(max(lt_price_lows))
-            lt_rsi_highs.remove(min(lt_rsi_highs))
-            lt_rsi_lows.remove(max(lt_rsi_lows))
-    
         
         time.sleep(0.92)
     else:
         time.sleep(0.92)
     
 
-    
-    
-    
-    
     
 #ONCE TRADING STARTS
 
@@ -208,20 +198,14 @@ while now < trading_end :
             st_price_low = df['Price'][now]
             st_rsi_high = df['rsi'][now]
             st_rsi_low = df['rsi'][now]
-            print('LT Highs: ')
-            print(lt_price_highs)
-            print('LT Lows: ')
-            print(lt_price_lows)
-            print('LT RSI Highs: ' )
-            print(lt_rsi_highs)
-            print('LT RSI Lows')
-            print(lt_rsi_lows)
+            
+
         
-        if len(lt_price_highs) > 9: 
-            lt_price_highs.remove(min(lt_price_highs))
-            lt_price_lows.remove(max(lt_price_lows))
-            lt_rsi_highs.remove(min(lt_rsi_highs))
-            lt_rsi_lows.remove(max(lt_rsi_lows))
+        if len(lt_price_highs) > 5:
+            lt_price_highs.remove(lt_price_highs[0])
+            lt_price_lows.remove(lt_price_lows[0])
+            lt_rsi_highs.remove(lt_rsi_highs[0])
+            lt_rsi_lows.remove(lt_rsi_lows[0])
         
         if all(st_price_high > i for i in lt_price_highs) == True: 
             higher_price_highs = True
@@ -260,30 +244,31 @@ while now < trading_end :
         rsi = 100 - (100/(1.0+rs))
         
         if curr_price > st_price_high: 
-            st_price_high = df['Price'][now]
+            st_price_high = curr_price
         if rsi > st_rsi_high: 
-            st_rsi_high = df['rsi'][now]
+            st_rsi_high = rsi
         if curr_price < st_price_low: 
-            st_price_low = df['Price'][now]
+            st_price_low = curr_price
         if rsi < st_rsi_low: 
-            st_rsi_low = df['rsi'][now]
+            st_rsi_low = rsi
 
-        if all(i>st_price_high for i in lt_price_highs) == False: 
+        if all(st_price_high > i for i in lt_price_highs) == True: 
             higher_price_highs = True
         else:
             higher_price_highs = False
-        if all(i>st_rsi_high for i in lt_rsi_highs) == True: 
+        if all(i < st_rsi_high for i in lt_rsi_highs) == False: 
             lower_rsi_highs = True
         else:
             lower_rsi_highs = False
-        if all(i<st_price_low for i in lt_price_lows) == False: 
+        if all(st_price_low < i for i in lt_price_lows) == True: 
             lower_price_lows = True
         else:
             lower_price_lows = False
-        if all(i<st_rsi_low for i in lt_rsi_lows) == True: 
+        if all(i > st_rsi_low for i in lt_rsi_lows) == False: 
             higher_rsi_lows = True
         else:
             higher_rsi_lows = False
+
         
         if rsi < 30 and lower_price_lows and higher_rsi_lows and not is_long and not is_short:
             print('Open Long Position in ' + symbol+' @ ' + str(curr_price))
@@ -375,4 +360,3 @@ long_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/longs_'+str(today)+'
 short_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/shorts_'+str(today)+'.csv')
 long_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/long_closes_'+str(today)+'.csv')
 short_closes_df.to_csv('/Users/robbiemcgowan/Documents/trading_data/short_closes_'+str(today)+'.csv')
-
